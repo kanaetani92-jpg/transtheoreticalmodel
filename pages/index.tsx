@@ -263,7 +263,11 @@ export default function Home() {
       const res = await fetch("/api/coach", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: recent })
+        body: JSON.stringify({
+          messages: recent,
+          sessionId: currentSessionId,
+          userId: user.uid
+        })
       });
       if (!res.ok) {
         throw new Error(`request_failed:${res.status}`);
@@ -273,7 +277,6 @@ export default function Home() {
       if (!reply) {
         throw new Error("empty_reply");
       }
-      await addDoc(coll, { role: "assistant", text: reply, createdAt: serverTimestamp() });
       setInput("");
       // フォーカス復帰
       textareaRef.current?.focus();
