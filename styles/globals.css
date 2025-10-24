@@ -36,6 +36,7 @@ h1 { font-size: 20px; margin-bottom: 16px; }
 
 .composer { display: grid; gap: 8px; }
 .composer textarea { width: 100%; min-height: 120px; resize: vertical; padding: 12px; border-radius: 12px; border: 1px solid #2a2d31; background: #0f1113; color: var(--fg); }
+.composer-error { margin: 0; color: #ff8787; font-size: 13px; }
 .composer-footer { display: flex; justify-content: space-between; align-items: center; }
 .counter { color: var(--muted); }
 .counter.over { color: #ff8787; }
