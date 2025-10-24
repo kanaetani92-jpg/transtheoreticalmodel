@@ -1,9 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { saveAssistantMessage } from "../../lib/firestoreAdmin";
 
 type Msg = { role: "user" | "assistant"; text: string };
 
-const SYSTEM_PROMPT = `
+const DEFAULT_SYSTEM_PROMPT = `
 あなたは職場で働く就労者のためのAIカウンセラー。多理論統合モデル（TTM）に基づき、利用者のストレスマネジメント行動の「変容ステージ」を推定し、ステージ適合の介入を一回の発話で小さく具体的に提案する。
 制約と原則:
 - 日本語で、敬意ある短文。専門用語は最小限。記号や装飾は使わず、Markdownの**は絶対に使わない。
@@ -37,6 +38,22 @@ TTMの運用規則（簡略）:
 禁止: 太字、過度な専門用語、長い段落、過度な共感の連発。
 `;
 
+function resolveSystemPrompt(): string {
+  const fromEnv = process.env.SYSTEM_PROMPT;
+  if (typeof fromEnv === "string" && fromEnv.trim()) {
+    return fromEnv.trim();
+  }
+  return DEFAULT_SYSTEM_PROMPT;
+}
+
+function resolveModelName(): string {
+  const fromEnv = process.env.MODEL_NAME;
+  if (typeof fromEnv === "string" && fromEnv.trim()) {
+    return fromEnv.trim();
+  }
+  return "gemini-2.5-flash";
+}
+
 function sanitize(text: string): string {
   // Geminiの出力からMarkdown太字を除去
   return (text || "").replace(/\*\*/g, "");
@@ -57,12 +74,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!apiKey) return res.status(500).json({ error: "GEMINI_API_KEY is not set" });
 
   try {
-    const { messages } = req.body as { messages: Msg[] };
+    const { messages, sessionId, userId } = req.body as { messages: Msg[]; sessionId?: string; userId?: string };
+    if (!sessionId || !userId) {
+      return res.status(400).json({ error: "missing_context" });
+    }
     const msgs = clampInput(messages || []);
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-pro",
-      systemInstruction: SYSTEM_PROMPT
+      model: resolveModelName(),
+      systemInstruction: resolveSystemPrompt()
     });
 
     // Gemini Node SDKのcontents形式へ変換
@@ -80,6 +100,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!reply) {
       throw new Error("empty_reply");
     }
+
+    await saveAssistantMessage({ userId, sessionId, text: reply });
 
     return res.status(200).json({ reply });
   } catch (e: any) {
