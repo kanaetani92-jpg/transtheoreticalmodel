@@ -18,10 +18,13 @@ h1 { font-size: 20px; margin-bottom: 16px; }
 
 .chat-pane { display: grid; grid-template-rows: auto 1fr auto; gap: 12px; min-height: calc(100vh - 48px); }
 .chat-header { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; }
-.session-list { overflow: hidden; }
-.session-scroll { display: flex; gap: 8px; overflow-x: auto; padding: 4px; }
-.session-btn { background: #2a2d31; border: 0; color: var(--fg); border-radius: 999px; padding: 6px 10px; white-space: nowrap; }
-.session-btn.active { background: var(--accent); color: white; }
+.session-list { display: grid; gap: 8px; }
+.session-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; }
+.session-card { background: #1b1f24; border: 1px solid #2a2d31; border-radius: 12px; padding: 10px 12px; color: var(--fg); text-align: left; cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s; }
+.session-card:hover { border-color: var(--accent); }
+.session-card.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.session-card-title { display: block; font-size: 14px; font-weight: 600; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.session-dropdown { width: 100%; background: #0f1113; color: var(--fg); border: 1px solid #2a2d31; border-radius: 8px; padding: 8px 10px; }
 
 .messages { background: var(--card); border-radius: 12px; padding: 12px; overflow-y: auto; }
 .msg { margin: 8px 0; display: flex; }

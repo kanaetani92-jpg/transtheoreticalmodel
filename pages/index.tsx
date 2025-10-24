@@ -288,6 +288,10 @@ export default function Home() {
 
   const chatPane = useMemo(() => {
     const currentSession = sessions.find((s) => s.id === currentSessionId);
+    const latestSessions = sessions.slice(0, 3);
+    const olderSessions = sessions.slice(3);
+    const olderSelected =
+      olderSessions.find((s) => s.id === currentSessionId)?.id ?? "";
     return (
       <div className="chat-pane">
         <div className="chat-header">
@@ -295,20 +299,38 @@ export default function Home() {
             <button onClick={createNewSession} className="btn">新規セッション</button>
           </div>
           <div className="session-list">
-            {sessions.length > 0 && (
-            <div className="session-scroll">
-              {sessions.map(s => (
-                <button
-                  key={s.id}
-                  className={`session-btn ${currentSessionId === s.id ? "active" : ""}`}
-                  onClick={() => selectSession(s.id)}
-                  title={s.title}
-                >
-                  {s.title}
-                </button>
-              ))}
-            </div>
-          )}
+            {latestSessions.length > 0 && (
+              <div className="session-cards">
+                {latestSessions.map((s) => (
+                  <button
+                    key={s.id}
+                    className={`session-card ${currentSessionId === s.id ? "active" : ""}`}
+                    onClick={() => selectSession(s.id)}
+                    title={s.title}
+                  >
+                    <span className="session-card-title">{s.title}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {olderSessions.length > 0 && (
+              <select
+                className="session-dropdown"
+                value={olderSelected}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    selectSession(e.target.value);
+                  }
+                }}
+              >
+                <option value="">以前のセッションを選択</option>
+                {olderSessions.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.title}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
           <div>
             <button onClick={handleLogout} className="btn-secondary">ログアウト</button>
