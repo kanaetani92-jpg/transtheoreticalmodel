@@ -1,0 +1,23 @@
+{
+  "name": "ttm-stress-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "echo \"(lint 省略)\""
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.11.0",
+    "firebase": "^10.12.0",
+    "next": "14.2.5",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "@types/react": "^18.2.66",
+    "typescript": "^5.5.4"
+  }
+}
