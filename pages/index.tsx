@@ -97,6 +97,11 @@ const stageNodes: StageNode[] = [
   },
 ];
 
+const needsStageInfo = (session?: Session) => {
+  if (!session) return true;
+  return !session.stageHeadline || !session.stageDescription;
+};
+
 export default function Home() {
   const [user, setUser] = useState<any>(null);
   const [email, setEmail] = useState(""); 
@@ -112,6 +117,13 @@ export default function Home() {
   const [stageNodeIndex, setStageNodeIndex] = useState(0);
   const [stageResult, setStageResult] = useState<StageOutcome | null>(null);
   const [stageFlowSessionId, setStageFlowSessionId] = useState<string | null>(null);
+
+  const startStageFlow = (sessionId: string) => {
+    setStageFlowSessionId(sessionId);
+    setStageNodeIndex(0);
+    setStageResult(null);
+    setStageFlowOpen(true);
+  };
 
   const maxLen = 5000;
   const rest = maxLen - input.length;
@@ -135,7 +147,16 @@ export default function Home() {
       const ss: Session[] = qs.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
       setSessions(ss);
       if (ss.length > 0) {
-        setCurrentSessionId(ss[0].id);
+        const firstSession = ss[0];
+        setCurrentSessionId(firstSession.id);
+        if (needsStageInfo(firstSession)) {
+          startStageFlow(firstSession.id);
+        } else {
+          setStageFlowOpen(false);
+          setStageFlowSessionId(null);
+          setStageResult(null);
+          setStageNodeIndex(0);
+        }
       }
     });
     return () => unsub();
@@ -168,13 +189,6 @@ export default function Home() {
     await signOut(auth);
   };
 
-  const startStageFlow = (sessionId: string) => {
-    setStageFlowSessionId(sessionId);
-    setStageNodeIndex(0);
-    setStageResult(null);
-    setStageFlowOpen(true);
-  };
-
   const resetStageFlow = () => {
     if (!stageFlowSessionId) return;
     setStageNodeIndex(0);
@@ -199,7 +213,7 @@ export default function Home() {
   const selectSession = (id: string) => {
     setCurrentSessionId(id);
     const target = sessions.find((s) => s.id === id);
-    if (!target?.stageHeadline) {
+    if (needsStageInfo(target)) {
       startStageFlow(id);
     } else {
       setStageFlowOpen(false);
@@ -360,13 +374,19 @@ export default function Home() {
         )}
 
         <div className="messages">
-          {messages.map((m) => (
-            <div key={m.id ?? Math.random()} className={`msg ${m.role}`}>
-              <div className="bubble">
-                {m.text}
+          {messages.map((m, index) => {
+            const messageKey = m.id
+              ?? (m.createdAt?.seconds != null
+                ? `message-${m.createdAt.seconds}-${m.createdAt.nanoseconds ?? 0}-${m.role}`
+                : `message-${index}`);
+            return (
+              <div key={messageKey} className={`msg ${m.role}`}>
+                <div className="bubble">
+                  {m.text}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="composer">
