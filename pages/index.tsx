@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { addDoc, collection, doc, getDocs, onSnapshot, orderBy, query, serverTimestamp, setDoc } from "firebase/firestore";
 import { auth, db } from "../lib/firebase";
@@ -338,101 +338,100 @@ export default function Home() {
     }
   };
 
-  const chatPane = useMemo(() => {
-    const currentSession = sessions.find((s) => s.id === currentSessionId);
-    const latestSessions = sessions.slice(0, 3);
-    const olderSessions = sessions.slice(3);
-    const olderSelected =
-      olderSessions.find((s) => s.id === currentSessionId)?.id ?? "";
-    return (
-      <div className="chat-pane">
-        <div className="chat-header">
-          <div>
-            <button onClick={createNewSession} className="btn">新規セッション</button>
-          </div>
-          <div className="session-list">
-            {latestSessions.length > 0 && (
-              <div className="session-cards">
-                {latestSessions.map((s) => (
-                  <button
-                    key={s.id}
-                    className={`session-card ${currentSessionId === s.id ? "active" : ""}`}
-                    onClick={() => selectSession(s.id)}
-                    title={s.title}
-                  >
-                    <span className="session-card-title">{s.title}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-            {olderSessions.length > 0 && (
-              <select
-                className="session-dropdown"
-                value={olderSelected}
-                onChange={(e) => {
-                  if (e.target.value) {
-                    selectSession(e.target.value);
-                  }
-                }}
-              >
-                <option value="">以前のセッションを選択</option>
-                {olderSessions.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.title}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-          <div>
-            <button onClick={handleLogout} className="btn-secondary">ログアウト</button>
-          </div>
+  const currentSession = sessions.find((s) => s.id === currentSessionId);
+  const latestSessions = sessions.slice(0, 3);
+  const olderSessions = sessions.slice(3);
+  const olderSelected =
+    olderSessions.find((s) => s.id === currentSessionId)?.id ?? "";
+
+  const chatPane = (
+    <div className="chat-pane">
+      <div className="chat-header">
+        <div>
+          <button onClick={createNewSession} className="btn">新規セッション</button>
         </div>
-
-        {currentSession?.stageHeadline && currentSession?.stageDescription && (
-          <div className="stage-summary">
-            <h2>{currentSession.stageHeadline}</h2>
-            <p>{currentSession.stageDescription}</p>
-          </div>
-        )}
-
-        <div className="messages">
-          {messages.map((m, index) => {
-            const messageKey = m.id
-              ?? (m.createdAt?.seconds != null
-                ? `message-${m.createdAt.seconds}-${m.createdAt.nanoseconds ?? 0}-${m.role}`
-                : `message-${index}`);
-            return (
-              <div key={messageKey} className={`msg ${m.role}`}>
-                <div className="bubble">
-                  {m.text}
-                </div>
-              </div>
-            );
-          })}
+        <div className="session-list">
+          {latestSessions.length > 0 && (
+            <div className="session-cards">
+              {latestSessions.map((s) => (
+                <button
+                  key={s.id}
+                  className={`session-card ${currentSessionId === s.id ? "active" : ""}`}
+                  onClick={() => selectSession(s.id)}
+                  title={s.title}
+                >
+                  <span className="session-card-title">{s.title}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {olderSessions.length > 0 && (
+            <select
+              className="session-dropdown"
+              value={olderSelected}
+              onChange={(e) => {
+                if (e.target.value) {
+                  selectSession(e.target.value);
+                }
+              }}
+            >
+              <option value="">以前のセッションを選択</option>
+              {olderSessions.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.title}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
-
-        <div className="composer">
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => {
-              if (sendError) setSendError(null);
-              setInput(e.target.value);
-            }}
-            onKeyDown={onKeyDown}
-            maxLength={maxLen}
-            placeholder="ここに記入（最大5000字）。Enterで改行、Shift+Enterで送信。"
-          />
-          {sendError && <p className="composer-error" role="status">{sendError}</p>}
-          <div className="composer-footer">
-            <span className={rest < 0 ? "counter over" : "counter"}>残り {rest} 字</span>
-            <button className="btn" onClick={sendMessage} disabled={sending || !input.trim()}>送信（Shift+Enter）</button>
-          </div>
+        <div>
+          <button onClick={handleLogout} className="btn-secondary">ログアウト</button>
         </div>
       </div>
-    );
-  }, [sessions, currentSessionId, messages, input, sending, rest, sendError]);
+
+      {currentSession?.stageHeadline && currentSession?.stageDescription && (
+        <div className="stage-summary">
+          <h2>{currentSession.stageHeadline}</h2>
+          <p>{currentSession.stageDescription}</p>
+        </div>
+      )}
+
+      <div className="messages">
+        {messages.map((m, index) => {
+          const messageKey = m.id
+            ?? (m.createdAt?.seconds != null
+              ? `message-${m.createdAt.seconds}-${m.createdAt.nanoseconds ?? 0}-${m.role}`
+              : `message-${index}`);
+          return (
+            <div key={messageKey} className={`msg ${m.role}`}>
+              <div className="bubble">
+                {m.text}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="composer">
+        <textarea
+          ref={textareaRef}
+          value={input}
+          onChange={(e) => {
+            if (sendError) setSendError(null);
+            setInput(e.target.value);
+          }}
+          onKeyDown={onKeyDown}
+          maxLength={maxLen}
+          placeholder="ここに記入（最大5000字）。Enterで改行、Shift+Enterで送信。"
+        />
+        {sendError && <p className="composer-error" role="status">{sendError}</p>}
+        <div className="composer-footer">
+          <span className={rest < 0 ? "counter over" : "counter"}>残り {rest} 字</span>
+          <button className="btn" onClick={sendMessage} disabled={sending || !input.trim()}>送信（Shift+Enter）</button>
+        </div>
+      </div>
+    </div>
+  );
 
   if (!user)
     return (
