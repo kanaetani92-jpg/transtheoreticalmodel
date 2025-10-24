@@ -265,14 +265,26 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: recent })
       });
+      if (!res.ok) {
+        throw new Error(`request_failed:${res.status}`);
+      }
       const data = await res.json();
-      const reply = data?.reply ?? "";
+      const reply = typeof data?.reply === "string" ? data.reply.trim() : "";
+      if (!reply) {
+        throw new Error("empty_reply");
+      }
       await addDoc(coll, { role: "assistant", text: reply, createdAt: serverTimestamp() });
       setInput("");
       // フォーカス復帰
       textareaRef.current?.focus();
     } catch (e) {
       console.error(e);
+      await addDoc(coll, {
+        role: "assistant",
+        text:
+          "申し訳ありません。Geminiからの応答を取得できませんでした。時間をおいて再度お試しください。",
+        createdAt: serverTimestamp()
+      });
     } finally {
       setSending(false);
     }

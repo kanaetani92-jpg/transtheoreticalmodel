@@ -72,12 +72,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }));
 
     const result = await model.generateContent({ contents });
-    const text = result.response.text();
-    const reply = sanitize(text);
+    const response = result?.response;
+
+    const raw = safelyExtractText(response);
+    const reply = sanitize(raw).trim();
+
+    if (!reply) {
+      throw new Error("empty_reply");
+    }
 
     return res.status(200).json({ reply });
   } catch (e: any) {
     console.error(e);
     return res.status(500).json({ error: "generation_failed", detail: String(e?.message || e) });
+  }
+}
+
+function safelyExtractText(response: any): string {
+  if (!response) return "";
+  try {
+    if (typeof response.text === "function") {
+      return response.text();
+    }
+  } catch (err) {
+    console.error("failed_to_read_text", err);
+  }
+  return extractTextFromCandidates(response?.candidates);
+}
+
+function extractTextFromCandidates(candidates: any[] | undefined): string {
+  if (!candidates || candidates.length === 0) return "";
+  try {
+    return candidates
+      .flatMap((candidate) => candidate?.content?.parts ?? [])
+      .map((part: any) => (typeof part?.text === "string" ? part.text : ""))
+      .filter(Boolean)
+      .join("\n");
+  } catch (err) {
+    console.error("failed_to_extract_text", err);
+    return "";
   }
 }
