@@ -266,14 +266,19 @@ export default function Home() {
 
   const sendMessage = async () => {
     if (!user || !currentSessionId) return;
-    if (!input.trim() || input.length > maxLen) return;
+    const trimmed = input.trim();
+    if (!trimmed || trimmed.length > maxLen) return;
+
     setSending(true);
     const coll = collection(db, "users", user.uid, "sessions", currentSessionId, "messages");
-    await addDoc(coll, { role: "user", text: input.trim(), createdAt: serverTimestamp() });
+    let userMessageSaved = false;
 
     try {
+      await addDoc(coll, { role: "user", text: trimmed, createdAt: serverTimestamp() });
+      userMessageSaved = true;
+
       // 直近の履歴（負荷軽減のため最大10件）を送る
-      const recent = messages.slice(-9).concat([{ role: "user", text: input.trim() }]);
+      const recent = messages.slice(-9).concat([{ role: "user", text: trimmed }]);
       const sessionMeta = sessions.find((s) => s.id === currentSessionId);
       const stagePayload =
         sessionMeta && sessionMeta.stageHeadline && sessionMeta.stageDescription
@@ -305,12 +310,18 @@ export default function Home() {
       textareaRef.current?.focus();
     } catch (e) {
       console.error(e);
-      await addDoc(coll, {
-        role: "assistant",
-        text:
-          "申し訳ありません。Geminiからの応答を取得できませんでした。時間をおいて再度お試しください。",
-        createdAt: serverTimestamp()
-      });
+      if (userMessageSaved) {
+        try {
+          await addDoc(coll, {
+            role: "assistant",
+            text:
+              "申し訳ありません。Geminiからの応答を取得できませんでした。時間をおいて再度お試しください。",
+            createdAt: serverTimestamp()
+          });
+        } catch (err) {
+          console.error("failed_to_write_error_message", err);
+        }
+      }
     } finally {
       setSending(false);
     }
