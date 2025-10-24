@@ -274,13 +274,22 @@ export default function Home() {
     try {
       // 直近の履歴（負荷軽減のため最大10件）を送る
       const recent = messages.slice(-9).concat([{ role: "user", text: input.trim() }]);
+      const sessionMeta = sessions.find((s) => s.id === currentSessionId);
+      const stagePayload =
+        sessionMeta && sessionMeta.stageHeadline && sessionMeta.stageDescription
+          ? {
+              headline: sessionMeta.stageHeadline,
+              description: sessionMeta.stageDescription,
+            }
+          : undefined;
       const res = await fetch("/api/coach", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: recent,
           sessionId: currentSessionId,
-          userId: user.uid
+          userId: user.uid,
+          stage: stagePayload,
         })
       });
       if (!res.ok) {
