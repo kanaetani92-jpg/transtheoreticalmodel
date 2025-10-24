@@ -38,3 +38,20 @@ h1 { font-size: 20px; margin-bottom: 16px; }
 .counter.over { color: #ff8787; }
 
 .empty { display: grid; gap: 12px; background: var(--card); border-radius: 12px; padding: 16px; }
+
+.stage-summary { background: #1b1f24; border-radius: 12px; padding: 16px; display: grid; gap: 8px; }
+.stage-summary h2 { margin: 0; font-size: 16px; }
+.stage-summary p { margin: 0; line-height: 1.6; color: var(--muted); white-space: pre-wrap; }
+
+.stage-overlay { position: fixed; inset: 0; background: rgba(5, 6, 8, 0.85); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 50; }
+.stage-card { background: var(--card); border-radius: 20px; padding: 28px; max-width: 520px; width: min(520px, 100%); display: grid; gap: 18px; box-shadow: 0 20px 60px rgba(0,0,0,0.45); }
+.stage-card h2 { margin: 0; font-size: 18px; }
+.stage-question { margin: 0; line-height: 1.6; color: var(--muted); }
+.stage-headline { margin: 0; font-size: 20px; font-weight: 600; }
+.stage-prompt { margin: 0; line-height: 1.6; color: var(--muted); }
+.stage-options { display: grid; gap: 12px; }
+.stage-option { border-radius: 12px; padding: 14px 16px; border: 1px solid #2a2d31; background: #111316; color: var(--fg); text-align: left; cursor: pointer; transition: background 0.2s, border-color 0.2s; }
+.stage-option.primary { background: var(--accent); border-color: var(--accent); color: white; }
+.stage-option:hover { border-color: var(--accent); }
+.stage-actions { display: grid; gap: 12px; }
+.stage-actions .btn, .stage-actions .btn-secondary { width: 100%; }
