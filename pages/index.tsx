@@ -113,6 +113,7 @@ export default function Home() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const [stageFlowOpen, setStageFlowOpen] = useState(false);
   const [stageNodeIndex, setStageNodeIndex] = useState(0);
   const [stageResult, setStageResult] = useState<StageOutcome | null>(null);
@@ -269,6 +270,7 @@ export default function Home() {
     const trimmed = input.trim();
     if (!trimmed || trimmed.length > maxLen) return;
 
+    setSendError(null);
     setSending(true);
     const coll = collection(db, "users", user.uid, "sessions", currentSessionId, "messages");
     let userMessageSaved = false;
@@ -322,6 +324,7 @@ export default function Home() {
           console.error("failed_to_write_error_message", err);
         }
       }
+      setSendError("メッセージを送信できませんでした。通信状況をご確認のうえ、時間をおいて再度お試しください。");
     } finally {
       setSending(false);
     }
@@ -413,11 +416,15 @@ export default function Home() {
           <textarea
             ref={textareaRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              if (sendError) setSendError(null);
+              setInput(e.target.value);
+            }}
             onKeyDown={onKeyDown}
             maxLength={maxLen}
             placeholder="ここに記入（最大5000字）。Enterで改行、Shift+Enterで送信。"
           />
+          {sendError && <p className="composer-error" role="status">{sendError}</p>}
           <div className="composer-footer">
             <span className={rest < 0 ? "counter over" : "counter"}>残り {rest} 字</span>
             <button className="btn" onClick={sendMessage} disabled={sending || !input.trim()}>送信（Shift+Enter）</button>
@@ -425,7 +432,7 @@ export default function Home() {
         </div>
       </div>
     );
-  }, [sessions, currentSessionId, messages, input, sending, rest]);
+  }, [sessions, currentSessionId, messages, input, sending, rest, sendError]);
 
   if (!user)
     return (
