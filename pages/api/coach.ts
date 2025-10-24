@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { saveAssistantMessage } from "../../lib/firestoreAdmin";
 
 type Msg = { role: "user" | "assistant"; text: string };
+type StageContext = { headline?: string; description?: string } | undefined;
 
 const DEFAULT_SYSTEM_PROMPT = `
 あなたは職場で働く就労者のためのAIカウンセラー。多理論統合モデル（TTM）に基づき、利用者のストレスマネジメント行動の「変容ステージ」を推定し、ステージ適合の介入を一回の発話で小さく具体的に提案する。
@@ -67,6 +68,26 @@ function clampInput(messages: Msg[]): Msg[] {
   }));
 }
 
+function clampStageText(value: string | undefined, maxLen: number): string {
+  if (!value) return "";
+  const trimmed = value.trim();
+  return trimmed.length > maxLen ? trimmed.slice(0, maxLen) : trimmed;
+}
+
+function buildStageMessage(stage: StageContext): string | null {
+  if (!stage) return null;
+  const headline = clampStageText(stage.headline, 200);
+  const description = clampStageText(stage.description, 2000);
+  if (!headline && !description) {
+    return null;
+  }
+  const parts = [
+    headline ? `【ステージ見出し】${sanitize(headline)}` : "",
+    description ? `【ステージ詳細】${sanitize(description)}` : ""
+  ].filter(Boolean);
+  return `以下はセッションの変容ステージ情報です。回答を考える際の参考にしてください。\n${parts.join("\n")}`;
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
@@ -74,11 +95,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!apiKey) return res.status(500).json({ error: "GEMINI_API_KEY is not set" });
 
   try {
-    const { messages, sessionId, userId } = req.body as { messages: Msg[]; sessionId?: string; userId?: string };
+    const { messages, sessionId, userId, stage } = req.body as {
+      messages: Msg[];
+      sessionId?: string;
+      userId?: string;
+      stage?: StageContext;
+    };
     if (!sessionId || !userId) {
       return res.status(400).json({ error: "missing_context" });
     }
     const msgs = clampInput(messages || []);
+    const stageMessage = buildStageMessage(stage);
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
       model: resolveModelName(),
@@ -86,10 +113,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     // Gemini Node SDKのcontents形式へ変換
-    const contents = msgs.map(m => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.text }]
-    }));
+    const contents = [
+      ...(stageMessage
+        ? [
+            {
+              role: "user" as const,
+              parts: [{ text: stageMessage }]
+            }
+          ]
+        : []),
+      ...msgs.map((m) => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.text }]
+      }))
+    ];
 
     const result = await model.generateContent({ contents });
     const response = result?.response;
